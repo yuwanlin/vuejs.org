@@ -217,7 +217,7 @@ new Vue({
 
 ## `key`
 
-When Vue is updating a list of elements rendered with `v-for`, by default it uses an "in-place patch" strategy. If the order of the data items has changed, instead of moving the DOM elements to match the order of the items, Vue will simply patch each element in-place and make sure it reflects what should be rendered at that particular index. This is similar to the behavior of `track-by="$index"` in Vue 1.x.
+When Vue is updating a list of elements rendered with `v-for`, by default it uses an "in-place patch" strategy. If the order of the data items has changed, instead of moving the DOM elements to match the order of the items, Vue will patch each element in-place and make sure it reflects what should be rendered at that particular index. This is similar to the behavior of `track-by="$index"` in Vue 1.x.
 
 This default mode is efficient, but only suitable **when your list render output does not rely on child component state or temporary DOM state (e.g. form input values)**.
 
@@ -251,7 +251,7 @@ You can open the console and play with the previous examples' `items` array by c
 
 ### Replacing an Array
 
-Mutation methods, as the name suggests, mutate the original array they are called on. In comparison, there are also non-mutating methods, e.g. `filter()`, `concat()` and `slice()`, which do not mutate the original array but **always return a new array**. When working with non-mutating methods, you can just replace the old array with the new one:
+Mutation methods, as the name suggests, mutate the original array they are called on. In comparison, there are also non-mutating methods, e.g. `filter()`, `concat()` and `slice()`, which do not mutate the original array but **always return a new array**. When working with non-mutating methods, you can replace the old array with the new one:
 
 ``` js
 example1.items = example1.items.filter(function (item) {
@@ -268,21 +268,39 @@ Due to limitations in JavaScript, Vue **cannot** detect the following changes to
 1. When you directly set an item with the index, e.g. `vm.items[indexOfItem] = newValue`
 2. When you modify the length of the array, e.g. `vm.items.length = newLength`
 
+For example:
+
+``` js
+var vm = new Vue({
+  data: {
+    items: ['a', 'b', 'c']
+  }
+})
+vm.items[1] = 'x' // is NOT reactive
+vm.items.length = 2 // is NOT reactive
+```
+
 To overcome caveat 1, both of the following will accomplish the same as `vm.items[indexOfItem] = newValue`, but will also trigger state updates in the reactivity system:
 
 ``` js
 // Vue.set
-Vue.set(example1.items, indexOfItem, newValue)
+Vue.set(vm.items, indexOfItem, newValue)
 ```
 ``` js
 // Array.prototype.splice
-example1.items.splice(indexOfItem, 1, newValue)
+vm.items.splice(indexOfItem, 1, newValue)
+```
+
+You can also use the [`vm.$set`](https://vuejs.org/v2/api/#vm-set) instance method, which is an alias for the global `Vue.set`:
+
+``` js
+vm.$set(vm.items, indexOfItem, newValue)
 ```
 
 To deal with caveat 2, you can use `splice`:
 
 ``` js
-example1.items.splice(newLength)
+vm.items.splice(newLength)
 ```
 
 ## Object Change Detection Caveats
@@ -319,16 +337,16 @@ You could add a new `age` property to the nested `userProfile` object with:
 Vue.set(vm.userProfile, 'age', 27)
 ```
 
-You can also use the `vm.$set` instance method, which is just an alias for the global `Vue.set`:
+You can also use the `vm.$set` instance method, which is an alias for the global `Vue.set`:
 
 ``` js
-this.$set(this.userProfile, 'age', 27)
+vm.$set(vm.userProfile, 'age', 27)
 ```
 
 Sometimes you may want to assign a number of new properties to an existing object, for example using `Object.assign()` or `_.extend()`. In such cases, you should create a fresh object with properties from both objects. So instead of:
 
 ``` js
-Object.assign(this.userProfile, {
+Object.assign(vm.userProfile, {
   age: 27,
   favoriteColor: 'Vue Green'
 })
@@ -337,7 +355,7 @@ Object.assign(this.userProfile, {
 You would add new, reactive properties with:
 
 ``` js
-this.userProfile = Object.assign({}, this.userProfile, {
+vm.userProfile = Object.assign({}, vm.userProfile, {
   age: 27,
   favoriteColor: 'Vue Green'
 })
@@ -366,7 +384,7 @@ computed: {
 }
 ```
 
-In situations where computed properties are not feasible (e.g. inside nested `v-for` loops), you can just use a method:
+In situations where computed properties are not feasible (e.g. inside nested `v-for` loops), you can use a method:
 
 ``` html
 <li v-for="n in even(numbers)">{{ n }}</li>
@@ -414,7 +432,7 @@ Similar to template `v-if`, you can also use a `<template>` tag with `v-for` to 
 <ul>
   <template v-for="item in items">
     <li>{{ item.msg }}</li>
-    <li class="divider"></li>
+    <li class="divider" role="presentation"></li>
   </template>
 </ul>
 ```
@@ -471,11 +489,15 @@ Here's a complete example of a simple todo list:
 
 ``` html
 <div id="todo-list-example">
-  <input
-    v-model="newTodoText"
-    v-on:keyup.enter="addNewTodo"
-    placeholder="Add a todo"
-  >
+  <form v-on:submit.prevent="addNewTodo">
+    <label for="new-todo">Add a todo</label>
+    <input
+      v-model="newTodoText"
+      id="new-todo"
+      placeholder="E.g. Feed the cat"
+    >
+    <button>Add</button>
+  </form>
   <ul>
     <li
       is="todo-item"
@@ -495,7 +517,7 @@ Vue.component('todo-item', {
   template: '\
     <li>\
       {{ title }}\
-      <button v-on:click="$emit(\'remove\')">X</button>\
+      <button v-on:click="$emit(\'remove\')">Remove</button>\
     </li>\
   ',
   props: ['title']
@@ -535,11 +557,15 @@ new Vue({
 
 {% raw %}
 <div id="todo-list-example" class="demo">
-  <input
-    v-model="newTodoText"
-    v-on:keyup.enter="addNewTodo"
-    placeholder="Add a todo"
-  >
+  <form v-on:submit.prevent="addNewTodo">
+    <label for="new-todo">Add a todo</label>
+    <input
+      v-model="newTodoText"
+      id="new-todo"
+      placeholder="E.g. Feed the cat"
+    >
+    <button>Add</button>
+  </form>
   <ul>
     <li
       is="todo-item"
@@ -555,7 +581,7 @@ Vue.component('todo-item', {
   template: '\
     <li>\
       {{ title }}\
-      <button v-on:click="$emit(\'remove\')">X</button>\
+      <button v-on:click="$emit(\'remove\')">Remove</button>\
     </li>\
   ',
   props: ['title']

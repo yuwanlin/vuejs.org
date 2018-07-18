@@ -1,4 +1,5 @@
 <% var isIndex = page.path === 'index.html' %>
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -57,7 +58,10 @@
 
     <!-- this needs to be loaded before guide's inline scripts -->
     <script src="<%- url_for("/js/vue.js") %>"></script>
-    <script>window.PAGE_TYPE = "<%- page.type %>"</script>
+    <script>
+      Vue.config.productionTip = false
+      window.PAGE_TYPE = "<%- page.type %>"
+    </script>
 
     <!-- ga -->
     <script>
@@ -69,6 +73,9 @@
       ga('create', '<%- theme.google_analytics %>', '<%- theme.root_domain %>');
       ga('send', 'pageview');
     </script>
+
+    <!-- vimeo analytics -->
+    <script type="text/javascript" defer="defer" src="https://extend.vimeocdn.com/ga/72160148.js"></script>
   </head>
   <body class="<%- isIndex ? '' : 'docs' -%>">
     <div id="mobile-bar" <%- isIndex ? 'class="top"' : '' %>>
